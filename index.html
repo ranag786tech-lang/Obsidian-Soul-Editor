@@ -2,210 +2,873 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DevAssist | Obsidian Soul Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obsidian Soul · Ultimate Editor</title>
+    <!-- Core libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Markdown library -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- JSZip for export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- FileSaver for download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- JSON Viewer -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.js"></script>
+    
     <style>
-        /* THE SOUL OF OBSIDIAN - PREMIUM DESIGN */
-        :root {
-            --obsidian-deep: #050505;
-            --obsidian-glass: rgba(15, 15, 15, 0.85);
-            --pure-white: #ffffff;
-            --soft-white: rgba(255, 255, 255, 0.6);
-            --glow: 0 0 20px rgba(255, 255, 255, 0.15);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-panel: #14141f;
+            --bg-editor: #1e1e2e;
+            --accent: #7aa2f7;
+            --text: #ffffff;
+            --text-dim: #a9b1d6;
+            --border: #2a2a3a;
+            --success: #9ece6a;
+            --error: #f7768e;
+            --warning: #e0af68;
+        }
 
-        body, html {
-            margin: 0; padding: 0; height: 100%;
-            background: var(--obsidian-deep);
-            font-family: 'Inter', 'Segoe UI', sans-serif;
-            color: var(--pure-white);
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
             overflow: hidden;
         }
 
-        /* SPLIT SCREEN LAYOUT */
-        #main-app {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            padding: 15px;
+        /* PWA Install Banner */
+        #install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 12px 20px;
+            display: none;
+            align-items: center;
             gap: 15px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* EDITOR STYLING */
-        .panel {
-            flex: 1;
-            background: var(--obsidian-glass);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
+        #install-banner button {
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Main Layout */
+        #app {
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            box-shadow: var(--glow);
+            height: 100vh;
         }
 
-        .panel-header {
-            padding: 12px 20px;
-            background: rgba(255, 255, 255, 0.03);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        /* Toolbar */
+        #toolbar {
+            background: var(--bg-panel);
+            padding: 10px 20px;
             display: flex;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: var(--bg-editor);
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .toolbar-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* File Tabs */
+        #file-tabs {
+            background: var(--bg-panel);
+            padding: 0 20px;
+            display: flex;
+            gap: 2px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .file-tab {
+            background: var(--bg-editor);
+            color: var(--text-dim);
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            position: relative;
+            min-width: 120px;
             justify-content: space-between;
         }
 
-        #code-editor {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #efefef;
-            padding: 20px;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 15px;
-            line-height: 1.6;
-            outline: none;
-            resize: none;
+        .file-tab.active {
+            background: var(--bg-dark);
+            color: var(--accent);
+            border-color: var(--accent);
         }
 
-        /* PREVIEW STYLING (The White Canvas) */
-        #live-preview-panel {
-            background: #ffffff;
-            border: none;
+        .file-tab .close {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .file-tab .close:hover {
+            opacity: 1;
+            color: var(--error);
+        }
+
+        /* Main Content */
+        #main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Editor Panel */
+        #editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-editor);
+            border-right: 1px solid var(--border);
+        }
+
+        #editor-container {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            font-size: 14px;
+        }
+
+        /* Preview Panel */
+        #preview-panel {
+            flex: 1;
+            background: white;
+            position: relative;
+            overflow: auto;
+        }
+
+        #preview-mode {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        #preview-content {
+            min-height: 100%;
+            padding: 20px;
+        }
+
+        /* JSON Editor */
+        #json-editor-container {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Console Panel */
+        #console-panel {
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            padding: 10px;
+        }
+
+        .console-line {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .console-error { color: var(--error); }
+        .console-log { color: var(--text-dim); }
+        .console-warn { color: var(--warning); }
+
+        /* AI Assistant */
+        #ai-assistant {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background: var(--bg-panel);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        iframe { width: 100%; height: 100%; border: none; border-radius: 0 0 16px 16px; }
+        #ai-header {
+            padding: 10px;
+            background: var(--accent);
+            border-radius: 11px 11px 0 0;
+            display: flex;
+            justify-content: space-between;
+            cursor: move;
+        }
 
-        /* FLOATING AI ASSISTANT - THE "EYE" */
-        #ai-sphere {
+        #ai-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        #ai-input {
+            padding: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        #ai-input input {
+            width: 100%;
+            background: var(--bg-editor);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        #ai-toggle {
             position: fixed;
-            bottom: 40px;
-            right: 40px;
-            width: 70px;
-            height: 70px;
-            background: var(--pure-white);
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--accent);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 0 30px rgba(255,255,255,0.4);
-            z-index: 100;
-        }
-
-        #ai-sphere:hover { transform: scale(1.1) rotate(90deg); }
-
-        .iris {
-            width: 25px;
-            height: 25px;
-            background: var(--obsidian-deep);
-            border-radius: 50%;
-            animation: breathe 3s infinite ease-in-out;
-        }
-
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.7; }
-        }
-
-        /* THE OBSIDIAN OVERLAY */
-        #ai-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 99;
-            opacity: 0;
-            pointer-events: none;
-            backdrop-filter: blur(20px);
-        }
-
-        #ai-overlay.visible { opacity: 1; pointer-events: auto; }
-
-        .terminal-text {
-            font-family: monospace;
-            font-size: 24px;
-            text-align: center;
-            max-width: 80%;
+            box-shadow: 0 5px 20px rgba(122, 162, 247, 0.3);
+            z-index: 999;
         }
     </style>
 </head>
 <body>
-
-<div id="main-app">
-    <div class="panel">
-        <div class="panel-header">
-            <span>Obsidian Editor v1.0</span>
-            <span id="status" style="color: #555;">● Offline</span>
-        </div>
-        <textarea id="code-editor" spellcheck="false"></textarea>
+    <!-- PWA Install Banner -->
+    <div id="install-banner">
+        <i class="fas fa-download"></i>
+        <span>Install Obsidian Soul for offline use</span>
+        <button onclick="installPWA()">Install</button>
+        <i class="fas fa-times" onclick="this.parentElement.style.display='none'" style="cursor:pointer"></i>
     </div>
 
-    <div class="panel" id="live-preview-panel">
-        <div class="panel-header" style="color: #888; background: #f9f9f9;">
-            <span>Live Scene Preview</span>
+    <div id="app">
+        <!-- Toolbar -->
+        <div id="toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" onclick="newFile()"><i class="fas fa-file"></i> New</button>
+                <button class="toolbar-btn" onclick="openFile()"><i class="fas fa-folder-open"></i> Open</button>
+                <button class="toolbar-btn" onclick="exportZip()"><i class="fas fa-file-archive"></i> Export ZIP</button>
+                <button class="toolbar-btn" onclick="exportSnippet()"><i class="fas fa-code"></i> Snippet</button>
+            </div>
+            <div class="toolbar-group">
+                <button class="toolbar-btn" onclick="formatCode()"><i class="fas fa-magic"></i> Format</button>
+                <button class="toolbar-btn" onclick="toggleConsole()"><i class="fas fa-terminal"></i> Console</button>
+                <button class="toolbar-btn" onclick="runCode()"><i class="fas fa-play"></i> Run</button>
+            </div>
+            <div class="toolbar-group">
+                <button class="toolbar-btn" onclick="setPreviewMode('auto')" id="mode-auto">Auto</button>
+                <button class="toolbar-btn" onclick="setPreviewMode('html')" id="mode-html">HTML</button>
+                <button class="toolbar-btn" onclick="setPreviewMode('markdown')" id="mode-md">MD</button>
+                <button class="toolbar-btn" onclick="setPreviewMode('json')" id="mode-json">JSON</button>
+            </div>
         </div>
-        <iframe id="preview-frame"></iframe>
+
+        <!-- File Tabs -->
+        <div id="file-tabs">
+            <div class="file-tab active" data-file="index.html">
+                <span><i class="fas fa-html5"></i> index.html</span>
+                <span class="close" onclick="closeFile('index.html')"><i class="fas fa-times"></i></span>
+            </div>
+            <div class="file-tab" data-file="style.css">
+                <span><i class="fas fa-css3"></i> style.css</span>
+                <span class="close" onclick="closeFile('style.css')"><i class="fas fa-times"></i></span>
+            </div>
+            <div class="file-tab" data-file="script.js">
+                <span><i class="fas fa-js"></i> script.js</span>
+                <span class="close" onclick="closeFile('script.js')"><i class="fas fa-times"></i></span>
+            </div>
+            <div class="file-tab" onclick="addFile()">
+                <span><i class="fas fa-plus"></i> Add File</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <!-- Editor Panel -->
+            <div id="editor-panel">
+                <div id="editor-container">
+                    <textarea id="editor"></textarea>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div id="preview-panel">
+                <div id="preview-mode">Auto</div>
+                <div id="preview-content"></div>
+            </div>
+        </div>
+
+        <!-- Console Panel (hidden by default) -->
+        <div id="console-panel" style="display: none;"></div>
     </div>
-</div>
 
-<div id="ai-sphere" onclick="summonAI()">
-    <div class="iris"></div>
-</div>
+    <!-- AI Assistant Toggle -->
+    <div id="ai-toggle" onclick="toggleAI()">
+        <i class="fas fa-robot"></i>
+    </div>
 
-<div id="ai-overlay" onclick="dismissAI()">
-    <div class="terminal-text" id="ai-msg"></div>
-</div>
+    <!-- AI Assistant -->
+    <div id="ai-assistant">
+        <div id="ai-header">
+            <span><i class="fas fa-robot"></i> Obsidian AI</span>
+            <i class="fas fa-times" onclick="toggleAI()"></i>
+        </div>
+        <div id="ai-messages"></div>
+        <div id="ai-input">
+            <input type="text" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter') askAI(this)">
+        </div>
+    </div>
 
-<script>
-    const editor = document.getElementById('code-editor');
-    const preview = document.getElementById('preview-frame');
-    const msgBox = document.getElementById('ai-msg');
-    const overlay = document.getElementById('ai-overlay');
+    <script>
+        // PWA Installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-banner').style.display = 'flex';
+        });
 
-    // MUTATION ENGINE
-    function mutate() {
-        const content = editor.value;
-        const blob = new Blob([content], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        preview.src = url;
-        preview.onload = () => URL.revokeObjectURL(url);
-        document.getElementById('status').style.color = '#fff';
-        setTimeout(() => document.getElementById('status').style.color = '#555', 500);
-    }
-    editor.addEventListener('input', mutate);
-
-    // AI SUMMONING (VOICE + TEXT)
-    function summonAI() {
-        overlay.classList.add('visible');
-        const lines = ["Initializing Digital Serenity...", "Obsidian UI Loaded.", "How can I help you build today, brother?"];
-        let i = 0;
-        msgBox.innerHTML = "";
-        
-        function typeWriter() {
-            if (i < lines.length) {
-                msgBox.innerHTML += lines[i] + "<br>";
-                const utterance = new SpeechSynthesisUtterance(lines[i]);
-                utterance.pitch = 0.7; // Deep tech voice
-                window.speechSynthesis.speak(utterance);
-                i++;
-                setTimeout(typeWriter, 1200);
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('install-banner').style.display = 'none';
+                });
             }
         }
-        typeWriter();
-    }
 
-    function dismissAI() {
-        overlay.classList.remove('visible');
-    }
-
-    // STARTER TEMPLATE
-    editor.value = `<html>\n<style>\n  body { background: #000; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }\n  h1 { border: 2px solid white; padding: 20px; text-transform: uppercase; letter-spacing: 5px; }\n</style>\n<body>\n  <h1>Creation Mode</h1>\n</body>\n</html>`;
-    mutate();
-</script>
-
+        // File System
+        let files = {
+            'index.html': `<!DOCTYPE html>
+<html>
+<head>
+    <title>My App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Hello, Obsidian!</h1>
+    <script src="script.js"><\/script>
 </body>
-  </html>
+</html>`,
+            'style.css': `body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}`,
+            'script.js': `console.log('Hello from Obsidian!');
+
+// Try editing me!
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Page loaded!');
+});`
+        };
+
+        let currentFile = 'index.html';
+        let currentMode = 'auto';
+        let consoleHistory = [];
+
+        // Initialize CodeMirror
+        const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            mode: 'htmlmixed',
+            theme: 'material-darker',
+            lineNumbers: true,
+            autoCloseTags: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true,
+            extraKeys: {
+                'Ctrl-S': () => saveFile(),
+                'Ctrl-Enter': () => runCode(),
+                'Ctrl-Space': 'autocomplete'
+            }
+        });
+
+        // Update editor content when file changes
+        function loadFile(filename) {
+            currentFile = filename;
+            editor.setValue(files[filename] || '');
+            
+            // Update mode based on file extension
+            if (filename.endsWith('.html')) editor.setOption('mode', 'htmlmixed');
+            else if (filename.endsWith('.css')) editor.setOption('mode', 'css');
+            else if (filename.endsWith('.js')) editor.setOption('mode', 'javascript');
+            else if (filename.endsWith('.json')) editor.setOption('mode', 'application/json');
+            else if (filename.endsWith('.md')) editor.setOption('mode', 'markdown');
+            
+            // Update active tab
+            document.querySelectorAll('.file-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.file === filename) tab.classList.add('active');
+            });
+            
+            updatePreview();
+        }
+
+        // Save current file
+        function saveFile() {
+            files[currentFile] = editor.getValue();
+            showNotification('File saved!');
+        }
+
+        // Add new file
+        function addFile() {
+            const name = prompt('Enter file name (e.g., app.js):');
+            if (name && !files[name]) {
+                files[name] = '';
+                const tab = document.createElement('div');
+                tab.className = 'file-tab';
+                tab.dataset.file = name;
+                tab.innerHTML = `<span><i class="fas fa-file"></i> ${name}</span>
+                                <span class="close" onclick="closeFile('${name}')"><i class="fas fa-times"></i></span>`;
+                tab.onclick = () => loadFile(name);
+                document.getElementById('file-tabs').insertBefore(tab, document.getElementById('file-tabs').lastElementChild);
+                loadFile(name);
+            }
+        }
+
+        // Close file
+        function closeFile(filename) {
+            if (Object.keys(files).length > 1) {
+                delete files[filename];
+                const tab = document.querySelector(`[data-file="${filename}"]`);
+                tab.remove();
+                if (currentFile === filename) {
+                    loadFile(Object.keys(files)[0]);
+                }
+            }
+        }
+
+        // Preview Modes
+        function setPreviewMode(mode) {
+            currentMode = mode;
+            document.getElementById('preview-mode').textContent = mode.toUpperCase();
+            document.querySelectorAll('[id^="mode-"]').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            updatePreview();
+        }
+
+        // Update preview based on current file and mode
+        function updatePreview() {
+            const content = editor.getValue();
+            const preview = document.getElementById('preview-content');
+            
+            if (currentMode === 'auto') {
+                if (currentFile.endsWith('.json')) {
+                    renderJSON(content, preview);
+                } else if (currentFile.endsWith('.md')) {
+                    renderMarkdown(content, preview);
+                } else {
+                    renderHTML(preview);
+                }
+            } else if (currentMode === 'json') {
+                renderJSON(content, preview);
+            } else if (currentMode === 'markdown') {
+                renderMarkdown(content, preview);
+            } else {
+                renderHTML(preview);
+            }
+        }
+
+        function renderHTML(preview) {
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>${files['style.css'] || ''}</style>
+                </head>
+                <body>
+                    ${files['index.html'] || ''}
+                    <script>${files['script.js'] || ''}<\/script>
+                </body>
+                </html>
+            `;
+            
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            iframe.srcdoc = html;
+            
+            preview.innerHTML = '';
+            preview.appendChild(iframe);
+            
+            // Capture console logs
+            captureConsole(iframe);
+        }
+
+        function renderJSON(content, preview) {
+            try {
+                const json = JSON.parse(content);
+                preview.innerHTML = `<pre style="background:#f5f5f5; padding:20px; border-radius:8px;">${JSON.stringify(json, null, 2)}</pre>`;
+            } catch (e) {
+                preview.innerHTML = `<div style="color:red; padding:20px;">Invalid JSON: ${e.message}</div>`;
+            }
+        }
+
+        function renderMarkdown(content, preview) {
+            const html = marked.parse(content);
+            preview.innerHTML = `<div class="markdown-body">${html}</div>`;
+            
+            // Add GitHub markdown CSS
+            if (!document.querySelector('#markdown-css')) {
+                const link = document.createElement('link');
+                link.id = 'markdown-css';
+                link.rel = 'stylesheet';
+                link.href = 'https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.1.0/github-markdown.min.css';
+                document.head.appendChild(link);
+            }
+        }
+
+        // Console capture
+        function captureConsole(iframe) {
+            const consoleDiv = document.getElementById('console-panel');
+            const originalLog = console.log;
+            const originalError = console.error;
+            const originalWarn = console.warn;
+            
+            console.log = (...args) => {
+                addToConsole('log', args.join(' '));
+                originalLog.apply(console, args);
+            };
+            
+            console.error = (...args) => {
+                addToConsole('error', args.join(' '));
+                originalError.apply(console, args);
+            };
+            
+            console.warn = (...args) => {
+                addToConsole('warn', args.join(' '));
+                originalWarn.apply(console, args);
+            };
+        }
+
+        function addToConsole(type, message) {
+            const consoleDiv = document.getElementById('console-panel');
+            const line = document.createElement('div');
+            line.className = `console-line console-${type}`;
+            line.textContent = `[${type.toUpperCase()}] ${message}`;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        function toggleConsole() {
+            const consoleDiv = document.getElementById('console-panel');
+            consoleDiv.style.display = consoleDiv.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Export functions
+        function exportZip() {
+            const zip = new JSZip();
+            
+            for (const [name, content] of Object.entries(files)) {
+                zip.file(name, content);
+            }
+            
+            zip.generateAsync({type: 'blob'}).then(blob => {
+                saveAs(blob, 'obsidian-project.zip');
+            });
+        }
+
+        function exportSnippet() {
+            const snippet = `<!-- Obsidian Soul Snippet -->
+${Object.entries(files).map(([name, content]) => 
+    `<!-- File: ${name} -->
+${content}
+`).join('\n')}`;
+            
+            const blob = new Blob([snippet], {type: 'text/plain'});
+            saveAs(blob, 'snippet.txt');
+        }
+
+        // AI Assistant
+        function toggleAI() {
+            const ai = document.getElementById('ai-assistant');
+            ai.style.display = ai.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function askAI(input) {
+            const question = input.value;
+            const messages = document.getElementById('ai-messages');
+            
+            messages.innerHTML += `<div><b>You:</b> ${question}</div>`;
+            
+            // Simple AI responses
+            let response = '';
+            if (question.includes('hello')) {
+                response = 'Hello! How can I help you code today?';
+            } else if (question.includes('json')) {
+                response = 'I can help you format JSON! Try the JSON preview mode.';
+            } else if (question.includes('markdown')) {
+                response = 'Markdown preview is ready! Just switch to MD mode.';
+            } else {
+                response = 'I\'m here to assist with your coding needs!';
+            }
+            
+            setTimeout(() => {
+                messages.innerHTML += `<div><b>AI:</b> ${response}</div>`;
+                messages.scrollTop = messages.scrollHeight;
+                
+                // Speak response
+                const utterance = new SpeechSynthesisUtterance(response);
+                speechSynthesis.speak(utterance);
+            }, 500);
+            
+            input.value = '';
+        }
+
+        // Format code using Prettier (simplified)
+        function formatCode() {
+            const content = editor.getValue();
+            try {
+                if (currentFile.endsWith('.json')) {
+                    const json = JSON.parse(content);
+                    editor.setValue(JSON.stringify(json, null, 2));
+                } else {
+                    // Basic formatting for other languages
+                    editor.setValue(content.split('\n').map(line => line.trim()).join('\n'));
+                }
+                showNotification('Code formatted!');
+            } catch (e) {
+                showNotification('Error formatting code', 'error');
+            }
+        }
+
+        // Run code
+        function runCode() {
+            saveFile();
+            updatePreview();
+            showNotification('Code executed!');
+        }
+
+        // Open file
+        function openFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.onchange = (e) => {
+                Array.from(e.target.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        files[file.name] = e.target.result;
+                        addFileTab(file.name);
+                    };
+                    reader.readAsText(file);
+                });
+            };
+            input.click();
+        }
+
+        function addFileTab(name) {
+            if (!document.querySelector(`[data-file="${name}"]`)) {
+                const tab = document.createElement('div');
+                tab.className = 'file-tab';
+                tab.dataset.file = name;
+                tab.innerHTML = `<span><i class="fas fa-file"></i> ${name}</span>
+                                <span class="close" onclick="closeFile('${name}')"><i class="fas fa-times"></i></span>`;
+                tab.onclick = () => loadFile(name);
+                document.getElementById('file-tabs').insertBefore(tab, document.getElementById('file-tabs').lastElementChild);
+            }
+            loadFile(name);
+        }
+
+        function newFile() {
+            const name = prompt('Enter file name:', 'new-file.txt');
+            if (name) {
+                files[name] = '';
+                addFileTab(name);
+            }
+        }
+
+        function showNotification(msg, type = 'success') {
+            const notif = document.createElement('div');
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#9ece6a' : '#f7768e'};
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                z-index: 10000;
+                animation: slideIn 0.3s;
+            `;
+            notif.textContent = msg;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // Initialize
+        loadFile('index.html');
+        
+        // Auto-update on changes
+        editor.on('change', () => {
+            saveFile();
+            if (currentMode !== 'auto') updatePreview();
+        });
+
+        // Make AI draggable
+        dragElement(document.getElementById('ai-assistant'));
+
+        function dragElement(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            if (document.getElementById(elmnt.id + "-header")) {
+                document.getElementById(elmnt.id + "-header").onmousedown = dragMouseDown;
+            } else {
+                elmnt.onmousedown = dragMouseDown;
+            }
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        // Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        }
+    </script>
+
+    <!-- Service Worker -->
+    <script>
+        // Create service worker dynamically
+        const swScript = `
+        const CACHE_NAME = 'obsidian-soul-v1';
+        const urlsToCache = [
+            '/',
+            'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
+            'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'
+        ];
+
+        self.addEventListener('install', event => {
+            event.waitUntil(
+                caches.open(CACHE_NAME)
+                    .then(cache => cache.addAll(urlsToCache))
+            );
+        });
+
+        self.addEventListener('fetch', event => {
+            event.respondWith(
+                caches.match(event.request)
+                    .then(response => response || fetch(event.request))
+            );
+        });
+        `;
+
+        const blob = new Blob([swScript], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(url).catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
