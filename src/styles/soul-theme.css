@@ -1,0 +1,140 @@
+/* Soul Theme — Where darkness meets inspiration */
+
+:root {
+  /* Obsidian Dark Core */
+  --soul-bg-primary: #0a0a0f;
+  --soul-bg-secondary: #14141f;
+  --soul-bg-tertiary: #1e1e2e;
+  --soul-surface: rgba(30, 30, 46, 0.8);
+  --soul-border: rgba(255, 255, 255, 0.05);
+
+  /* Soulful Colors */
+  --soul-accent: #7aa2f7;
+  --soul-accent-glow: rgba(122, 162, 247, 0.3);
+  --soul-success: #9ece6a;
+  --soul-warning: #e0af68;
+  --soul-error: #f7768e;
+  --soul-info: #7dcfff;
+
+  /* Text Souls */
+  --soul-text-primary: #ffffff;
+  --soul-text-secondary: #a9b1d6;
+  --soul-text-muted: #565f89;
+
+  /* Gradients */
+  --soul-gradient: linear-gradient(135deg, #7aa2f7 0%, #bb9af7 100%);
+  --soul-glow: 0 0 20px rgba(122, 162, 247, 0.15);
+
+  /* Animations */
+  --soul-transition: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  background: var(--soul-bg-primary);
+  color: var(--soul-text-primary);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Soul Particle Background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(122, 162, 247, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Smooth Scrolling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--soul-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--soul-text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--soul-accent);
+}
+
+/* Glass Morphism Effect */
+.glass-panel {
+  background: var(--soul-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--soul-border);
+  border-radius: 16px;
+  box-shadow: var(--soul-glow);
+}
+
+/* Animated Gradient Border */
+.gradient-border {
+  position: relative;
+  background: var(--soul-bg-tertiary);
+  border-radius: 12px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--soul-gradient);
+  border-radius: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* Soul Pulse Animation */
+@keyframes soulPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--soul-accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(122, 162, 247, 0);
+  }
+}
+
+.soul-pulse {
+  animation: soulPulse 2s infinite;
+}
+
+/* Floating Soul Orb */
+@keyframes floatOrb {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.05);
+  }
+}
+
+.soul-orb {
+  animation: floatOrb 3s ease-in-out infinite;
+}
